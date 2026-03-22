@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>РЫЦАРЬ ЧЕСТИ</title>
+    <style>
+        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Courier New', monospace; }
+        canvas { border: 2px solid white; cursor: pointer; display: none; }
+        canvas.active { display: block; }
+        .splash, .menu {
+            position: absolute;
+            width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-size: cover;
+            background-position: center;
+        }
+        .splash { background: #0a0a2a; }
+        .menu { background: #0a0a2a; }
+        .splash img, .menu img { max-width: 100%; max-height: 70%; object-fit: contain; }
+        .menu button {
+            margin: 10px;
+            padding: 12px 30px;
+            font-size: 24px;
+            font-family: monospace;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 10;
+        }
+        .menu button:hover { background: #45a049; transform: scale(1.05); }
+        .menu button.selected { background: #ff9800; box-shadow: 0 0 10px #ff9800; }
+        .file-btn {
+            background: #2196f3 !important;
+            font-size: 18px !important;
+            margin-top: 20px !important;
+        }
+        .title { font-size: 48px; color: #ffcc44; margin-bottom: 30px; text-shadow: 2px 2px 4px #000; z-index: 10; }
+        .controls-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: #0f0;
+            background: rgba(0,0,0,0.7);
+            padding: 8px;
+            font-size: 11px;
+            border-radius: 5px;
+            z-index: 200;
+            font-family: monospace;
+        }
+        .file-input-container {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 200;
+        }
+        .file-label {
+            background: #2196f3;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .file-label:hover { background: #0b7dda; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <div id="splash" class="splash">
+        <img id="splashImg" src="assets/images/backgrounds/Zastavka.png" alt="Заставка" style="max-width: 80%; max-height: 60%;">
+        <div class="title">SHIPA_GAME</div>
+        <div style="color: white; font-size: 20px;">Entertament</div>
+        <div style="color: #aaa; margin-top: 20px;">Loading...</div>
+    </div>
+    
+    <div id="menu" class="menu" style="display: none;">
+        <img src="assets/images/backgrounds/Zastavka.png" alt="Фон меню" style="position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.3;">
+        <div class="title">РЫЦАРЬ ЧЕСТИ</div>
+        <button id="btnPlay">ИГРАТЬ</button>
+        <button id="btnLoad" class="file-btn">📂 ВЫБРАТЬ УРОВЕНЬ</button>
+        <button id="btnExit">ВЫХОД</button>
+        <div style="color: #aaa; margin-top: 30px;">↑ ↓ выбор | ENTER подтвердить</div>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="controls-info" id="debugInfo">🎮 РЫЦАРЬ ЧЕСТИ<br>Загрузка...</div>
+    <div class="file-input-container">
+        <label for="fileInput" class="file-label">📂 Выбрать JSON уровень</label>
+        <input type="file" id="fileInput" accept=".json">
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const debugDiv = document.getElementById('debugInfo');
+const splashDiv = document.getElementById('splash');
+const menuDiv = document.getElementById('menu');
+const fileInput = document.getElementById('fileInput');
+
+// ============ СОСТОЯНИЯ ============
+const STATE_SPLASH = 0;
+const STATE_MENU = 1;
+const STATE_GAME = 2;
+let currentState = STATE_SPLASH;
+let menuSelected = 0;
+
+// ============ ПАРАМЕТРЫ ============
+const TILE_SIZE = 80;
+let platforms = [];
+let coins = [];
+let enemies = [];
+let finishRect = null;
+let worldWidth = 2000;
+let worldHeight = 600;
+
+// ИГРОК
+let player = {
+    x: 100, y: 500,
+    vx: 0, vy: 0,
+    drawWidth: 48,
+    drawHeight: 48,
+    width: 32,
+    height: 32,
+    onGround: false,
+    facingRight: true,
+    frame: 0,
+    frameTimer: 0,
+    invincibleTimer: 0
+};
+
+// СТАРТОВАЯ ПОЗИЦИЯ
+let startX = 100;
+let startY = 500;
+
+let cameraX = 0;
+let cameraY = 0;
+let score = 0;
+let lives = 3;
+let levelLoaded = false;
+let spritesLoaded = false;
+let loadedImages = 0;
+let totalImages = 0;
+let showCollisions = false;
+let currentLevel = 1;
+
+const GRAVITY = 0.8;
+const JUMP = -18;
+const SPEED = 5;
+const INVINCIBLE_TIME = 60;
+
+// Облака и кусты
+let clouds = [];
+let bushes = [];
+let cloudOffset = 0;
+let bushOffset = 0;
+
+// ============ ЗАГРУЗКА СПРАЙТОВ ============
+const sprites = {
+    player_idle: null, player_run: [], player_jump: null,
+    ground: null, ground_left: null, ground_center: null, ground_right: null,
+    platform: null, wood: null, stone: null, finish: null,
+    slime: null, skeleton: null, goblin: null, stump: null, ghost: null,
+    coin: null, gold: null, diamond: null, heart: null, star: null,
+    heart_icon: null, sky: null, clouds: [], bushes: []
+};
+
+const spritePaths = {
+    player_idle: 'assets/images/player/hero_001.png',
+    player_run: [
+        'assets/images/player/hero_001.png','assets/images/player/hero_002.png',
+        'assets/images/player/hero_003.png','assets/images/player/hero_004.png',
+        'assets/images/player/hero_005.png','assets/images/player/hero_006.png',
+        'assets/images/player/hero_007.png','assets/images/player/hero_008.png',
+        'assets/images/player/hero_009.png','assets/images/player/hero_010.png'
+    ],
+    player_jump: 'assets/images/player/hero_001.png',
+    ground: 'assets/images/platforms/ground.png',
+    ground_left: 'assets/images/platforms/tera/tera__z11.png',
+    ground_center: 'assets/images/platforms/tera/tera__z12.png',
+    ground_right: 'assets/images/platforms/tera/tera__z13.png',
+    platform: 'assets/images/platforms/platform.png',
+    wood: 'assets/images/platforms/wood.png',
+    stone: 'assets/images/platforms/stone.png',
+    finish: 'assets/images/platforms/portal.png',
+    slime: 'assets/images/monster/slamev2.png',
+    skeleton: 'assets/images/monster/skeletos.png',
+    goblin: 'assets/images/monster/goblintorgovec.png',
+    stump: 'assets/images/monster/t_pen.png',
+    ghost: 'assets/images/monster/privedeniev2.png',
+    coin: 'assets/images/currency/moneta.png',
+    gold: 'assets/images/currency/slitok.png',
+    diamond: 'assets/images/currency/kristal.png',
+    heart: 'assets/images/currency/heart.png',
+    star: 'assets/images/currency/star.png',
+    heart_icon: 'assets/images/currency/heart.png',
+    sky: 'assets/images/backgrounds/sky.png'
+};
+
+const cloudFiles = [
+    'assets/images/backgrounds/cloud/cloud1.png','assets/images/backgrounds/cloud/cloud2.png',
+    'assets/images/backgrounds/cloud/cloud3.png','assets/images/backgrounds/cloud/cloud4.png',
+    'assets/images/backgrounds/cloud/cloud5.png'
+];
+
+const bushFiles = [
+    'assets/images/backgrounds/bushes/bushes1.png','assets/images/backgrounds/bushes/bushes2.png',
+    'assets/images/backgrounds/bushes/bushes3.png','assets/images/backgrounds/bushes/bushes4.png',
+    'assets/images/backgrounds/bushes/bushes5.png','assets/images/backgrounds/bushes/bushes6.png',
+    'assets/images/backgrounds/bushes/bushes7.png','assets/images/backgrounds/bushes/bushes8.png',
+    'assets/images/backgrounds/bushes/bushes9.png','assets/images/backgrounds/bushes/bushes10.png',
+    'assets/images/backgrounds/bushes/bushes11.png','assets/images/backgrounds/bushes/bushes12.png',
+    'assets/images/backgrounds/bushes/bushes13.png','assets/images/backgrounds/bushes/bushes14.png',
+    'assets/images/backgrounds/bushes/bushes15.png'
+];
+
+function loadImage(path, callback) {
+    const img = new Image();
+    img.onload = () => { loadedImages++; if (callback) callback(img); updateLoadingProgress(); };
+    img.onerror = () => { loadedImages++; if (callback) callback(null); updateLoadingProgress(); };
+    img.src = path;
+    return img;
+}
+
+function updateLoadingProgress() {
+    if (totalImages > 0 && currentState === STATE_SPLASH) {
+        const percent = Math.floor(loadedImages / totalImages * 100);
+        const loadingDiv = splashDiv.querySelector('div:last-child');
+        if (loadingDiv) loadingDiv.innerHTML = `Loading... ${percent}%`;
+    }
+}
+
+function loadSprites() {
+    totalImages = 0; loadedImages = 0;
+    for (let key in spritePaths) {
+        if (Array.isArray(spritePaths[key])) totalImages += spritePaths[key].length;
+        else if (spritePaths[key]) totalImages++;
+    }
+    totalImages += cloudFiles.length + bushFiles.length;
+    
+    for (let i = 0; i < cloudFiles.length; i++) loadImage(cloudFiles[i], (img) => { if (img) sprites.clouds.push(img); });
+    for (let i = 0; i < bushFiles.length; i++) loadImage(bushFiles[i], (img) => { if (img) sprites.bushes.push(img); });
+    
+    loadImage(spritePaths.player_idle, (img) => { sprites.player_idle = img; });
+    for (let i = 0; i < spritePaths.player_run.length; i++) loadImage(spritePaths.player_run[i], (img) => { sprites.player_run[i] = img; });
+    loadImage(spritePaths.player_jump, (img) => { sprites.player_jump = img; });
+    loadImage(spritePaths.ground, (img) => { sprites.ground = img; });
+    loadImage(spritePaths.ground_left, (img) => { sprites.ground_left = img; });
+    loadImage(spritePaths.ground_center, (img) => { sprites.ground_center = img; });
+    loadImage(spritePaths.ground_right, (img) => { sprites.ground_right = img; });
+    loadImage(spritePaths.platform, (img) => { sprites.platform = img; });
+    loadImage(spritePaths.wood, (img) => { sprites.wood = img; });
+    loadImage(spritePaths.stone, (img) => { sprites.stone = img; });
+    loadImage(spritePaths.finish, (img) => { sprites.finish = img; });
+    loadImage(spritePaths.slime, (img) => { sprites.slime = img; });
+    loadImage(spritePaths.skeleton, (img) => { sprites.skeleton = img; });
+    loadImage(spritePaths.goblin, (img) => { sprites.goblin = img; });
+    loadImage(spritePaths.stump, (img) => { sprites.stump = img; });
+    loadImage(spritePaths.ghost, (img) => { sprites.ghost = img; });
+    loadImage(spritePaths.coin, (img) => { sprites.coin = img; });
+    loadImage(spritePaths.gold, (img) => { sprites.gold = img; });
+    loadImage(spritePaths.diamond, (img) => { sprites.diamond = img; });
+    loadImage(spritePaths.heart, (img) => { sprites.heart = img; });
+    loadImage(spritePaths.star, (img) => { sprites.star = img; });
+    loadImage(spritePaths.heart_icon, (img) => { sprites.heart_icon = img; });
+    loadImage(spritePaths.sky, (img) => { sprites.sky = img; });
+    
+    const checkComplete = setInterval(() => {
+        if (loadedImages >= totalImages) {
+            clearInterval(checkComplete);
+            spritesLoaded = true;
+            createBackgroundObjects();
+            debugDiv.innerHTML = `✅ Спрайты загружены!<br>Нажми H для подсветки коллизий<br>Выберите JSON файл уровня`;
+            setTimeout(() => {
+                currentState = STATE_MENU;
+                splashDiv.style.display = 'none';
+                menuDiv.style.display = 'flex';
+            }, 1000);
+        }
+    }, 100);
+}
+
+function createBackgroundObjects() {
+    clouds = [];
+    for (let i = 0; i < 20; i++) {
+        if (sprites.clouds.length) {
+            const cloudImg = sprites.clouds[Math.floor(Math.random() * sprites.clouds.length)];
+            clouds.push({ img: cloudImg, x: Math.random() * (worldWidth + 2000) - 1000, y: Math.random() * 250 + 50,
+                speed: 0.3 + Math.random() * 0.4, width: 80 + Math.random() * 60, height: 50 + Math.random() * 40 });
+        }
+    }
+    bushes = [];
+    for (let i = 0; i < 50; i++) {
+        if (sprites.bushes.length) {
+            const bushImg = sprites.bushes[Math.floor(Math.random() * sprites.bushes.length)];
+            bushes.push({ img: bushImg, x: Math.random() * worldWidth, y: 520 + Math.random() * 30,
+                width: 50 + Math.random() * 30, height: 40 + Math.random() * 30 });
+        }
+    }
+}
+
+function drawSprite(sprite, x, y, width, height, flip = false) {
+    if (!sprite) return;
+    const w = width || sprite.width;
+    const h = height || sprite.height;
+    if (flip) {
+        ctx.save();
+        ctx.translate(x + w, y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, 0, w, h);
+        ctx.restore();
+    } else {
+        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, x, y, w, h);
+    }
+}
+
+// ============ ЗАГРУЗКА УРОВНЯ ИЗ ФАЙЛА ============
+function loadLevelFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            parseLevelData(data, file.name);
+        } catch (err) {
+            debugDiv.innerHTML = `<span style="color:#f66">❌ Ошибка: ${err.message}</span>`;
+        }
+    };
+    reader.readAsText(file);
+}
+
+function parseLevelData(data, filename) {
+    platforms = []; coins = []; enemies = []; finishRect = null;
+    
+    const grid = data.grid;
+    if (!grid) return;
+    
+    const tileSizeOrig = data.tile_size || 40;
+    const gridHeight = grid.length;
+    const gridWidth = grid[0].length;
+    const scale = TILE_SIZE / tileSizeOrig;
+    
+    worldWidth = gridWidth * tileSizeOrig * scale;
+    worldHeight = gridHeight * tileSizeOrig * scale;
+    
+    for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+            const objId = grid[y][x];
+            if (objId === 0) continue;
+            
+            const worldX = x * tileSizeOrig * scale;
+            const worldY = (gridHeight - 1 - y) * tileSizeOrig * scale;
+            
+            if ((objId >= 1 && objId <= 4) || (objId >= 32 && objId <= 34)) {
+                let spriteType = 'ground';
+                if (objId === 2) spriteType = 'platform';
+                else if (objId === 3) spriteType = 'wood';
+                else if (objId === 4) spriteType = 'stone';
+                else if (objId === 32) spriteType = 'ground_left';
+                else if (objId === 33) spriteType = 'ground_center';
+                else if (objId === 34) spriteType = 'ground_right';
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites[spriteType] });
+            }
+            else if (objId === 31) {
+                finishRect = { x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE };
+            }
+            else if (objId >= 20 && objId <= 24) {
+                const types = {20:'coin',21:'gold',22:'diamond',23:'heart',24:'star'};
+                coins.push({
+                    x: worldX + (TILE_SIZE - 32)/2, y: worldY + (TILE_SIZE - 32)/2,
+                    drawWidth: 32, drawHeight: 32, width: 24, height: 24,
+                    type: types[objId], sprite: sprites[types[objId]]
+                });
+            }
+            else if (objId >= 10 && objId <= 14) {
+                const types = {10:'slime',11:'skeleton',12:'stump',13:'ghost',14:'goblin'};
+                enemies.push({
+                    x: worldX, y: worldY, drawWidth: 48, drawHeight: 48, width: 40, height: 40,
+                    type: types[objId], sprite: sprites[types[objId]],
+                    dir: 1, startX: worldX, speed: 2, velY: 0, onGround: false
+                });
+            }
+            else if (objId === 30) {
+                startX = worldX;
+                startY = worldY;
+            }
+        }
+    }
+    
+    player.x = startX;
+    player.y = startY;
+    player.vx = 0;
+    player.vy = 0;
+    player.invincibleTimer = 0;
+    lives = 3;
+    score = 0;
+    levelLoaded = true;
+    currentLevel = 1;
+    
+    createBackgroundObjects();
+    debugDiv.innerHTML = `✅ УРОВЕНЬ ЗАГРУЖЕН!<br>📁 ${filename}<br>🧱 Платформ: ${platforms.length}<br>🪙 Монет: ${coins.length}<br>👾 Врагов: ${enemies.length}<br>🏁 Финиш: ${finishRect ? 'ДА' : 'НЕТ'}<br>🎮 ← → движение, Пробел прыжок, H - подсветка`;
+}
+
+// ============ КОЛЛИЗИИ ============
+function checkCollisions() {
+    player.onGround = false;
+    for (let plat of platforms) {
+        if (player.x < plat.x + plat.w && player.x + player.width > plat.x &&
+            player.y < plat.y + plat.h && player.y + player.height > plat.y) {
+            const overlapLeft = (player.x + player.width) - plat.x;
+            const overlapRight = (plat.x + plat.w) - player.x;
+            const overlapTop = (player.y + player.height) - plat.y;
+            const overlapBottom = (plat.y + plat.h) - player.y;
+            const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+            
+            if (minOverlap === overlapTop && player.vy > 0) {
+                player.y = plat.y - player.height;
+                player.vy = 0;
+                player.onGround = true;
+            }
+            else if (minOverlap === overlapBottom && player.vy < 0) {
+                player.y = plat.y + plat.h;
+                player.vy = 0;
+            }
+            else if (minOverlap === overlapLeft) {
+                player.x = plat.x - player.width;
+                player.vx = 0;
+            }
+            else if (minOverlap === overlapRight) {
+                player.x = plat.x + plat.w;
+                player.vx = 0;
+            }
+        }
+    }
+}
+
+function updateEnemies() {
+    for (let enemy of enemies) {
+        enemy.velY += GRAVITY;
+        enemy.y += enemy.velY;
+        enemy.onGround = false;
+        for (let plat of platforms) {
+            if (enemy.x < plat.x + plat.w && enemy.x + enemy.width > plat.x &&
+                enemy.y < plat.y + plat.h && enemy.y + enemy.height > plat.y) {
+                if (enemy.velY > 0) {
+                    enemy.y = plat.y - enemy.height;
+                    enemy.velY = 0;
+                    enemy.onGround = true;
+                }
+            }
+        }
+        if (enemy.onGround) {
+            enemy.x += enemy.speed * enemy.dir;
+            if (enemy.x <= enemy.startX - 100) enemy.dir = 1;
+            if (enemy.x >= enemy.startX + 100) enemy.dir = -1;
+        }
+        
+        if (player.invincibleTimer <= 0 && 
+            player.x < enemy.x + enemy.width && player.x + player.width > enemy.x &&
+            player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
+            lives--;
+            player.invincibleTimer = INVINCIBLE_TIME;
+            if (player.x < enemy.x) player.x = enemy.x - player.width - 20;
+            else player.x = enemy.x + enemy.width + 20;
+            player.vy = -10;
+            debugDiv.innerHTML += `<br><span style="color:#f66">💔 Потеряна жизнь! Осталось: ${lives}</span>`;
+            
+            if (lives <= 0) {
+                player.x = startX;
+                player.y = startY;
+                player.vx = 0;
+                player.vy = 0;
+                lives = 3;
+                score = Math.max(0, score - 50);
+                debugDiv.innerHTML += `<br><span style="color:#ff0">🔄 Возврат на старт!</span>`;
+            }
+        }
+    }
+    if (player.invincibleTimer > 0) player.invincibleTimer--;
+}
+
+function checkCoins() {
+    for (let i = 0; i < coins.length; i++) {
+        const coin = coins[i];
+        if (player.x < coin.x + coin.width && player.x + player.width > coin.x &&
+            player.y < coin.y + coin.height && player.y + player.height > coin.y) {
+            if (coin.type === 'heart') {
+                lives = Math.min(lives + 1, 5);
+                debugDiv.innerHTML += `<br><span style="color:#6f6">❤️ Сердце! Жизней: ${lives}</span>`;
+            } else {
+                const values = {coin:1, gold:5, diamond:10, star:50};
+                score += values[coin.type] || 1;
+            }
+            coins.splice(i,1);
+            i--;
+        }
+    }
+}
+
+function checkFinish() {
+    if (finishRect && player.x < finishRect.x + finishRect.w && player.x + player.width > finishRect.x &&
+        player.y < finishRect.y + finishRect.h && player.y + player.height > finishRect.y) {
+        debugDiv.innerHTML += `<br><span style="color:#6f6">🎉 УРОВЕНЬ ПРОЙДЕН! Счёт: ${score}</span>`;
+        // Можно загрузить следующий уровень, но пока просто сообщение
+    }
+}
+
+function updatePlayerAnimation() {
+    if (player.onGround && (keys.left || keys.right)) {
+        player.frameTimer++;
+        if (player.frameTimer > 4) {
+            player.frameTimer = 0;
+            player.frame = (player.frame + 1) % 10;
+        }
+    } else {
+        player.frame = 0;
+    }
+}
+
+function drawCollisionDebug() {
+    if (!showCollisions) return;
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+    ctx.fillRect(player.x - cameraX, player.y - cameraY, player.width, player.height);
+    for (let plat of platforms) {
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+        ctx.fillRect(plat.x - cameraX, plat.y - cameraY, plat.w, plat.h);
+    }
+    for (let enemy of enemies) {
+        ctx.fillStyle = 'rgba(255, 165, 0, 0.5)';
+        ctx.fillRect(enemy.x - cameraX, enemy.y - cameraY, enemy.width, enemy.height);
+    }
+    for (let coin of coins) {
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+        ctx.fillRect(coin.x - cameraX, coin.y - cameraY, coin.width, coin.height);
+    }
+    if (finishRect) {
+        ctx.fillStyle = 'rgba(255, 0, 255, 0.5)';
+        ctx.fillRect(finishRect.x - cameraX, finishRect.y - cameraY, finishRect.w, finishRect.h);
+    }
+}
+
+function update() {
+    if (!levelLoaded || !spritesLoaded) return;
+    
+    player.vx = 0;
+    if (keys.left) { player.vx = -SPEED; player.facingRight = false; }
+    if (keys.right) { player.vx = SPEED; player.facingRight = true; }
+    
+    player.x += player.vx;
+    checkCollisions();
+    player.vy += GRAVITY;
+    player.y += player.vy;
+    checkCollisions();
+    if (keys.space && player.onGround) { player.vy = JUMP; player.onGround = false; }
+    
+    player.x = Math.max(0, Math.min(player.x, worldWidth - player.width));
+    player.y = Math.max(0, Math.min(player.y, worldHeight - player.height));
+    
+    cameraX = player.x + player.width/2 - 400;
+    cameraX = Math.max(0, Math.min(cameraX, worldWidth - 800));
+    cameraY = player.y + player.height/2 - 300;
+    cameraY = Math.max(0, Math.min(cameraY, worldHeight - 600));
+    
+    cloudOffset += 0.5;
+    bushOffset += 0.3;
+    updatePlayerAnimation();
+    updateEnemies();
+    checkCoins();
+    checkFinish();
+}
+
+function draw() {
+    if (sprites.sky) drawSprite(sprites.sky, 0, 0, 800, 600);
+    else { ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, 800, 600); }
+    
+    if (!levelLoaded) {
+        ctx.fillStyle = '#000'; ctx.font = '24px monospace';
+        ctx.fillText('Выберите JSON файл уровня', 250, 300);
+        return;
+    }
+    
+    for (let cloud of clouds) {
+        if (cloud.img) {
+            let x = (cloud.x - cameraX * 0.3 + cloudOffset) % (worldWidth + 2000);
+            if (x < -500) x += worldWidth + 2000;
+            drawSprite(cloud.img, x, cloud.y - cameraY * 0.2, cloud.width, cloud.height);
+        }
+    }
+    for (let plat of platforms) if (plat.sprite) drawSprite(plat.sprite, plat.x - cameraX, plat.y - cameraY, plat.w, plat.h);
+    for (let bush of bushes) if (bush.img) drawSprite(bush.img, bush.x - cameraX * 0.6, bush.y - cameraY, bush.width, bush.height);
+    for (let coin of coins) if (coin.sprite) drawSprite(coin.sprite, coin.x - cameraX, coin.y - cameraY, coin.drawWidth, coin.drawHeight);
+    for (let enemy of enemies) if (enemy.sprite) drawSprite(enemy.sprite, enemy.x - cameraX, enemy.y - cameraY, enemy.drawWidth, enemy.drawHeight);
+    if (finishRect && sprites.finish) drawSprite(sprites.finish, finishRect.x - cameraX, finishRect.y - cameraY, finishRect.w, finishRect.h);
+    
+    let playerSprite = !player.onGround ? sprites.player_jump : (keys.left || keys.right ? sprites.player_run[player.frame] : sprites.player_idle);
+    if (playerSprite) drawSprite(playerSprite, player.x - cameraX, player.y - cameraY, player.drawWidth, player.drawHeight, !player.facingRight);
+    
+    drawCollisionDebug();
+    
+    ctx.fillStyle = '#000'; ctx.font = 'bold 14px monospace';
+    ctx.fillText(`❤️ Жизни: ${lives} | 🪙 Счёт: ${score}`, 10, 25);
+    ctx.fillText(`🎮 ← → движение | Пробел прыжок | H - подсветка коллизий`, 10, 50);
+}
+
+// ============ УПРАВЛЕНИЕ ============
+const keys = { left: false, right: false, space: false };
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft') keys.left = true;
+    if (e.code === 'ArrowRight') keys.right = true;
+    if (e.code === 'Space') { keys.space = true; e.preventDefault(); }
+    if (e.code === 'KeyH') { showCollisions = !showCollisions; debugDiv.innerHTML = showCollisions ? '🔍 Подсветка ВКЛ' : '🔍 Подсветка ВЫКЛ'; }
+    if (currentState === STATE_MENU) {
+        if (e.code === 'ArrowUp') menuSelected = (menuSelected - 1 + 3) % 3;
+        if (e.code === 'ArrowDown') menuSelected = (menuSelected + 1) % 3;
+        if (e.code === 'Enter') {
+            if (menuSelected === 0) {
+                document.getElementById('fileInput').click();
+            } else if (menuSelected === 1) {
+                currentState = STATE_GAME;
+                menuDiv.style.display = 'none';
+                canvas.classList.add('active');
+                levelLoaded = false;
+                debugDiv.innerHTML = '🎮 Выберите JSON файл уровня';
+            } else if (menuSelected === 2) {
+                window.close();
+            }
+        }
+    }
+    if (currentState === STATE_GAME && e.code === 'Escape') {
+        currentState = STATE_MENU;
+        canvas.classList.remove('active');
+        menuDiv.style.display = 'flex';
+        levelLoaded = false;
+    }
+});
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') keys.space = false;
+    if (e.code === 'ArrowLeft') keys.left = false;
+    if (e.code === 'ArrowRight') keys.right = false;
+});
+
+document.getElementById('btnPlay').onclick = () => {
+    document.getElementById('fileInput').click();
+};
+document.getElementById('btnLoad').onclick = () => {
+    document.getElementById('fileInput').click();
+};
+document.getElementById('btnExit').onclick = () => { window.close(); };
+fileInput.onchange = (e) => {
+    if (e.target.files.length > 0) {
+        currentState = STATE_GAME;
+        menuDiv.style.display = 'none';
+        canvas.classList.add('active');
+        loadLevelFromFile(e.target.files[0]);
+    }
+};
+
+loadSprites();
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+gameLoop();
+</script>
+</body>
+</html>
