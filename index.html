@@ -37,7 +37,6 @@
             height: auto;
         }
         
-        /* ИНФОРМАЦИОННОЕ ОКНО - ПРАВЫЙ ВЕРХНИЙ УГОЛ */
         .controls-info {
             position: fixed;
             top: 10px;
@@ -58,7 +57,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         
-        /* ПАНЕЛЬ КНОПОК ПОЛНОЭКРАННОГО РЕЖИМА */
         .fullscreen-panel {
             position: fixed;
             top: 10px;
@@ -91,7 +89,6 @@
             background: rgba(80,80,100,0.9);
         }
         
-        /* СЕНСОРНЫЕ КНОПКИ */
         .touch-buttons {
             position: fixed;
             bottom: 20px;
@@ -207,18 +204,14 @@
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 </div>
 
-<!-- ПАНЕЛЬ КНОПОК ПОЛНОЭКРАННОГО РЕЖИМА -->
 <div class="fullscreen-panel">
     <div class="fullscreen-btn" id="fullscreenBtn" title="Полноэкранный режим (F11)">⛶</div>
     <div class="window-btn" id="windowBtn" title="Открыть в отдельном окне">🪟</div>
 </div>
 
-<!-- ИНФОРМАЦИОННОЕ ОКНО -->
 <div class="controls-info" id="debugInfo">🎮 РЫЦАРЬ ЧЕСТИ<br>Загрузка...</div>
-
 <div class="mobile-hint">📱 Сенсорное управление | 🔲 Кнопки полноэкранного режима</div>
 
-<!-- СЕНСОРНЫЕ КНОПКИ -->
 <div class="touch-buttons">
     <div class="left-panel">
         <div class="touch-btn jump-btn" id="btnJump">🏃‍♂️</div>
@@ -315,7 +308,7 @@ document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 document.addEventListener('mozfullscreenchange', updateFullscreenButton);
 
-// ============ НАСТРОЙКА ПУТЕЙ - ИСПРАВЛЕНЫ ПУТИ ============
+// ============ НАСТРОЙКА ПУТЕЙ - ВСЕ ПУТИ ИСПРАВЛЕНЫ ============
 const BASE_PATH = 'https://hylio005-debug.github.io/SHIPGAME/';
 
 function getPath(relativePath) {
@@ -429,7 +422,7 @@ function setupTouchControls() {
     btnJump.addEventListener('mouseleave', () => { keys.space = false; });
 }
 
-// ============ ЗАГРУЗКА СПРАЙТОВ - ИСПРАВЛЕНЫ ПУТИ ============
+// ============ ЗАГРУЗКА СПРАЙТОВ - ПУТИ ИСПРАВЛЕНЫ ============
 const sprites = {
     player_idle: null, player_run: [], player_jump: null,
     ground: null, ground_left: null, ground_center: null, ground_right: null,
@@ -439,30 +432,38 @@ const sprites = {
     heart_icon: null, sky: null, clouds: [], bushes: []
 };
 
-// ВСЕ ПУТИ ИСПРАВЛЕНЫ: platform -> platforms, ground -> grounds
+// ПРАВИЛЬНЫЕ ПУТИ:
+// - platforms/tera/ - для земли (ground)
+// - platforms/ - для платформ
+// - grounds/ - если есть отдельная папка
 const spritePaths = {
     player_idle: getPath('assets/images/player/hero_001.png'),
     player_run: Array(10).fill().map((_,i) => getPath(`assets/images/player/hero_00${i+1}.png`)),
     player_jump: getPath('assets/images/player/hero_001.png'),
-    ground: getPath('assets/images/platforms/ground.png'),
+    // Земля (ground) хранится в папке platforms/tera/
+    ground: getPath('assets/images/platforms/tera/tera__z11.png'),
     ground_left: getPath('assets/images/platforms/tera/tera__z11.png'),
     ground_center: getPath('assets/images/platforms/tera/tera__z12.png'),
     ground_right: getPath('assets/images/platforms/tera/tera__z13.png'),
+    // Платформы и объекты
     platform: getPath('assets/images/platforms/platform.png'),
     wood: getPath('assets/images/platforms/wood.png'),
     stone: getPath('assets/images/platforms/stone.png'),
     finish: getPath('assets/images/platforms/portal.png'),
+    // Монстры
     slime: getPath('assets/images/monster/slamev2.png'),
     skeleton: getPath('assets/images/monster/skeletos.png'),
     goblin: getPath('assets/images/monster/goblintorgovec.png'),
     stump: getPath('assets/images/monster/t_pen.png'),
     ghost: getPath('assets/images/monster/privedeniev2.png'),
+    // Валюта
     coin: getPath('assets/images/currency/moneta.png'),
     gold: getPath('assets/images/currency/slitok.png'),
     diamond: getPath('assets/images/currency/kristal.png'),
     heart: getPath('assets/images/currency/heart.png'),
     star: getPath('assets/images/currency/star.png'),
     heart_icon: getPath('assets/images/currency/heart.png'),
+    // Фон
     sky: getPath('assets/images/backgrounds/sky.png')
 };
 
@@ -525,7 +526,7 @@ function loadSprites() {
             spritesLoaded = true;
             createBackgroundObjects();
             parseLevelData(BUILTIN_LEVEL);
-            debugDiv.innerHTML = `✅ Готово!<br>❤️ ${lives}  🪙 ${score}<br>← →  прыжок<br>🔲 Кнопки слева:<br>⛶ - полноэкранный<br>🪟 - в новое окно<br>📁 Пути исправлены: platforms`;
+            debugDiv.innerHTML = `✅ Готово!<br>❤️ ${lives}  🪙 ${score}<br>← →  прыжок<br>🔲 Кнопки слева:<br>⛶ - полноэкранный<br>🪟 - в новое окно<br>📁 Пути: platforms/tera/`;
             setupTouchControls();
         }
     }, 100);
