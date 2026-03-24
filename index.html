@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>РЫЦАРЬ ЧЕСТИ - Полноэкранный режим</title>
+    <title>РЫЦАРЬ ЧЕСТИ</title>
     <style>
         * {
             user-select: none;
@@ -54,7 +54,6 @@
             max-width: 220px;
             text-align: right;
             line-height: 1.3;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         
         .fullscreen-panel {
@@ -81,8 +80,6 @@
             cursor: pointer;
             transition: all 0.2s ease;
             touch-action: manipulation;
-            font-family: monospace;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         .fullscreen-btn:active, .window-btn:active {
             transform: scale(0.92);
@@ -100,12 +97,7 @@
             pointer-events: none;
             z-index: 300;
         }
-        .left-panel {
-            display: flex;
-            gap: 20px;
-            pointer-events: auto;
-        }
-        .right-panel {
+        .left-panel, .right-panel {
             display: flex;
             gap: 20px;
             pointer-events: auto;
@@ -121,44 +113,70 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            font-weight: bold;
             color: gold;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: transform 0.05s linear, background 0.1s;
-            touch-action: manipulation;
             cursor: pointer;
-            font-family: monospace;
+            transition: transform 0.05s linear;
         }
-        .touch-btn:active {
-            transform: scale(0.92);
-            background: rgba(80,80,100,0.9);
-            border-color: #ffaa00;
-        }
-        .jump-btn {
-            background: rgba(200,60,40,0.85);
-            border-color: #ff8844;
-            color: white;
-            font-size: 36px;
-        }
-        .move-btn {
-            background: rgba(40,100,180,0.85);
-            border-color: #88ccff;
-            color: white;
-            font-size: 42px;
-        }
+        .touch-btn:active { transform: scale(0.92); }
+        .jump-btn { background: rgba(200,60,40,0.85); border-color: #ff8844; color: white; font-size: 36px; }
+        .move-btn { background: rgba(40,100,180,0.85); border-color: #88ccff; color: white; font-size: 42px; }
         
         @media (max-width: 700px) {
             .touch-btn { width: 60px; height: 60px; font-size: 28px; }
-            .jump-btn { font-size: 32px; }
-            .move-btn { font-size: 36px; }
-            .controls-info { font-size: 9px; max-width: 200px; padding: 5px 8px; top: 8px; right: 8px; }
-            .fullscreen-btn, .window-btn { width: 40px; height: 40px; font-size: 18px; top: 8px; left: 8px; }
+            .controls-info { font-size: 9px; max-width: 200px; }
         }
-        @media (max-width: 500px) {
-            .touch-btn { width: 55px; height: 55px; font-size: 26px; }
-            .controls-info { font-size: 8px; max-width: 180px; }
-            .fullscreen-btn, .window-btn { width: 38px; height: 38px; font-size: 16px; }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .password-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            animation: fadeInUp 0.3s ease;
+        }
+        
+        .password-modal h3 { color: #ffd700; margin: 0 0 15px 0; font-size: 24px; }
+        .password-modal input {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #ffd700;
+            color: #fff;
+            padding: 12px 20px;
+            font-size: 18px;
+            border-radius: 10px;
+            margin: 10px 0;
+            width: 200px;
+            text-align: center;
+        }
+        .password-modal button {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        .password-modal button:active { transform: scale(0.95); }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .mobile-hint {
@@ -171,48 +189,62 @@
             border-radius: 12px;
             font-size: 8px;
             z-index: 200;
-            font-family: monospace;
             pointer-events: none;
         }
         
-        .fullscreen-toast {
+        .error-message {
             position: fixed;
-            bottom: 120px;
+            bottom: 50%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
             background: rgba(0,0,0,0.9);
-            color: #ffcc44;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 400;
+            color: #ff6666;
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid #ff0000;
             font-family: monospace;
-            pointer-events: none;
-            white-space: nowrap;
-            border: 1px solid gold;
+            text-align: center;
+            z-index: 1000;
             animation: fadeOut 2s ease forwards;
         }
+        
         @keyframes fadeOut {
-            0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            0% { opacity: 1; }
             70% { opacity: 1; }
-            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); visibility: hidden; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        
+        .menu-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #aaa;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-family: monospace;
+            pointer-events: none;
+            z-index: 200;
         }
     </style>
 </head>
 <body>
-<div class="game-container" id="gameContainer">
+<div class="game-container">
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 </div>
 
 <div class="fullscreen-panel">
-    <div class="fullscreen-btn" id="fullscreenBtn" title="Полноэкранный режим (F11)">⛶</div>
-    <div class="window-btn" id="windowBtn" title="Открыть в отдельном окне">🪟</div>
+    <div class="fullscreen-btn" id="fullscreenBtn">⛶</div>
+    <div class="window-btn" id="windowBtn">🪟</div>
 </div>
 
 <div class="controls-info" id="debugInfo">🎮 РЫЦАРЬ ЧЕСТИ<br>Загрузка...</div>
-<div class="mobile-hint">📱 Сенсорное управление | 🔲 Кнопки полноэкранного режима</div>
+<div class="mobile-hint">📱 Сенсорное управление</div>
+<div class="menu-hint" id="menuHint">ESC - меню | H - подсветка</div>
 
-<div class="touch-buttons">
+<div class="touch-buttons" id="touchButtons">
     <div class="left-panel">
         <div class="touch-btn jump-btn" id="btnJump">🏃‍♂️</div>
     </div>
@@ -226,203 +258,50 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const debugDiv = document.getElementById('debugInfo');
-const gameContainer = document.getElementById('gameContainer');
+const menuHint = document.getElementById('menuHint');
 
-// ============ ПОЛНОЭКРАННЫЙ РЕЖИМ ============
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-const windowBtn = document.getElementById('windowBtn');
+// ============ СОСТОЯНИЯ ============
+const GAME_STATE = { SPLASH: 0, MENU: 1, PLAYING: 2, PASSWORD: 3, LOADING: 4 };
+let currentState = GAME_STATE.SPLASH;
+let splashImage = null;
+let selectedLevel = null;
+let menuSelected = 0;
+let levelSelectedIndex = 0;
+let isPasswordModalOpen = false;
+let isLoadingLevel = false;
 
-function showToast(message) {
-    const existingToast = document.querySelector('.fullscreen-toast');
-    if (existingToast) existingToast.remove();
-    const toast = document.createElement('div');
-    toast.className = 'fullscreen-toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-}
+// Данные уровней
+const levels = [
+    { id: 1, name: "🌲 ТЕМНЫЙ ЛЕС", file: "level_1.json", password: "123" },
+    { id: 2, name: "🏛️ СТАРОЕ ПОДЗЕМЕЛЬЕ", file: "level_2.json", password: "123" },
+    { id: 3, name: "⚰️ КЛАДБИЩЕ", file: "level_3.json", password: "123" },
+    { id: 4, name: "👑 МАВЗОЛЕЙ", file: "level_4.json", password: "123" }
+];
 
-function toggleFullscreen() {
-    const elem = document.documentElement;
-    const isFullscreen = document.fullscreenElement || 
-                         document.webkitFullscreenElement || 
-                         document.mozFullScreenElement || 
-                         document.msFullscreenElement;
-    
-    if (!isFullscreen) {
-        const requestMethod = elem.requestFullscreen || 
-                             elem.webkitRequestFullscreen || 
-                             elem.mozRequestFullScreen || 
-                             elem.msRequestFullscreen;
-        if (requestMethod) {
-            requestMethod.call(elem);
-            showToast('🎮 Полноэкранный режим активирован!');
-        } else {
-            showToast('⚠️ Полноэкранный режим не поддерживается');
-        }
-    } else {
-        const exitMethod = document.exitFullscreen || 
-                          document.webkitExitFullscreen || 
-                          document.mozCancelFullScreen || 
-                          document.msExitFullscreen;
-        if (exitMethod) {
-            exitMethod.call(document);
-        }
-    }
-}
-
-function openInWindow() {
-    const htmlContent = document.documentElement.outerHTML;
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const newWindow = window.open(url, '_blank', 'fullscreen=yes, width=' + screen.width + ', height=' + screen.height);
-    if (newWindow) {
-        showToast('✨ Игра открыта в новом окне!');
-        URL.revokeObjectURL(url);
-    } else {
-        showToast('⚠️ Разрешите всплывающие окна');
-        window.open(window.location.href, '_blank');
-    }
-}
-
-fullscreenBtn.addEventListener('click', (e) => { e.preventDefault(); toggleFullscreen(); });
-fullscreenBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleFullscreen(); });
-windowBtn.addEventListener('click', (e) => { e.preventDefault(); openInWindow(); });
-windowBtn.addEventListener('touchstart', (e) => { e.preventDefault(); openInWindow(); });
-
-function updateFullscreenButton() {
-    const isFullscreen = document.fullscreenElement || 
-                         document.webkitFullscreenElement || 
-                         document.mozFullScreenElement || 
-                         document.msFullscreenElement;
-    if (isFullscreen) {
-        fullscreenBtn.textContent = '✖';
-        fullscreenBtn.style.borderColor = '#ff8844';
-    } else {
-        fullscreenBtn.textContent = '⛶';
-        fullscreenBtn.style.borderColor = 'rgba(255,215,0,0.8)';
-    }
-}
-
-document.addEventListener('fullscreenchange', updateFullscreenButton);
-document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
-document.addEventListener('mozfullscreenchange', updateFullscreenButton);
-
-// ============ НАСТРОЙКА ПУТЕЙ ============
-const BASE_PATH = 'https://hylio005-debug.github.io/SHIPGAME/';
-
-function getPath(relativePath) {
-    return BASE_PATH + relativePath;
-}
-
-// ============ ВСТРОЕННЫЙ УРОВЕНЬ ============
-const BUILTIN_LEVEL = {
-    "grid": [[
-      32,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    ],
-    [4,30,0,0,0,10,0,0,0,0,0,0,10,0,0,0,22,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,10,0,0,0,0,0,0,0,21,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,13,0,0,0,0,0,23,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,31,0,24,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
-    "width": 60,
-    "height": 20,
-    "start_x": 40,
-    "start_y": 40
-};
-
-// ============ ПАРАМЕТРЫ ============
+// ============ ПАРАМЕТРЫ ИГРЫ ============
 const TILE_SIZE = 80;
-let platforms = [];
-let coins = [];
-let enemies = [];
-let finishRect = null;
-let worldWidth = 2000;
-let worldHeight = 600;
-
+let platforms = [], coins = [], enemies = [], finishRect = null;
+let worldWidth = 2000, worldHeight = 600;
 let player = {
-    x: 100, y: 500,
-    vx: 0, vy: 0,
-    drawWidth: 48,
-    drawHeight: 48,
-    width: 32,
-    height: 32,
-    onGround: false,
-    facingRight: true,
-    frame: 0,
-    frameTimer: 0,
-    invincibleTimer: 0
+    x: 100, y: 500, vx: 0, vy: 0,
+    drawWidth: 48, drawHeight: 48, width: 32, height: 32,
+    onGround: false, facingRight: true, frame: 0, frameTimer: 0, invincibleTimer: 0
 };
-
-let startX = 100;
-let startY = 500;
-let cameraX = 0;
-let cameraY = 0;
-let score = 0;
-let lives = 3;
-let levelLoaded = false;
-let spritesLoaded = false;
-let loadedImages = 0;
-let totalImages = 0;
+let startX = 100, startY = 500, cameraX = 0, cameraY = 0;
+let score = 0, lives = 3;
+let levelLoaded = false, spritesLoaded = false;
+let loadedImages = 0, totalImages = 0;
 let showCollisions = false;
+const GRAVITY = 0.8, JUMP = -18, SPEED = 5, INVINCIBLE_TIME = 60;
+let clouds = [], bushes = [], cloudOffset = 0, bushOffset = 0;
+let keys = { left: false, right: false, space: false };
+let stars = [];
 
-const GRAVITY = 0.8;
-const JUMP = -18;
-const SPEED = 5;
-const INVINCIBLE_TIME = 60;
+// ============ ПУТИ ============
+const BASE_PATH = 'https://hylio005-debug.github.io/SHIPGAME/';
+function getPath(p) { return BASE_PATH + p; }
 
-let clouds = [];
-let bushes = [];
-let cloudOffset = 0;
-let bushOffset = 0;
-
-// ============ УПРАВЛЕНИЕ ============
-const keys = { left: false, right: false, space: false };
-
-function setupTouchControls() {
-    const btnLeft = document.getElementById('btnLeft');
-    const btnRight = document.getElementById('btnRight');
-    const btnJump = document.getElementById('btnJump');
-    
-    if (!btnLeft || !btnRight || !btnJump) return;
-    
-    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; }, { passive: false });
-    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
-    btnLeft.addEventListener('touchcancel', (e) => { keys.left = false; });
-    btnLeft.addEventListener('mousedown', (e) => { e.preventDefault(); keys.left = true; });
-    btnLeft.addEventListener('mouseup', () => { keys.left = false; });
-    btnLeft.addEventListener('mouseleave', () => { keys.left = false; });
-    
-    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; }, { passive: false });
-    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
-    btnRight.addEventListener('touchcancel', (e) => { keys.right = false; });
-    btnRight.addEventListener('mousedown', (e) => { e.preventDefault(); keys.right = true; });
-    btnRight.addEventListener('mouseup', () => { keys.right = false; });
-    btnRight.addEventListener('mouseleave', () => { keys.right = false; });
-    
-    btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); keys.space = true; }, { passive: false });
-    btnJump.addEventListener('touchend', (e) => { e.preventDefault(); keys.space = false; });
-    btnJump.addEventListener('touchcancel', (e) => { keys.space = false; });
-    btnJump.addEventListener('mousedown', (e) => { e.preventDefault(); keys.space = true; });
-    btnJump.addEventListener('mouseup', () => { keys.space = false; });
-    btnJump.addEventListener('mouseleave', () => { keys.space = false; });
-}
-
-// ============ ЗАГРУЗКА СПРАЙТОВ ============
+// ============ СПРАЙТЫ ============
 const sprites = {
     player_idle: null, player_run: [], player_jump: null,
     ground_left: null, ground_center: null, ground_right: null,
@@ -432,51 +311,47 @@ const sprites = {
     heart_icon: null, sky: null, clouds: [], bushes: []
 };
 
-// ПРАВИЛЬНЫЕ ПУТИ - земля из папки platforms/tera/
 const spritePaths = {
     player_idle: getPath('assets/images/player/hero_001.png'),
     player_run: Array(10).fill().map((_,i) => getPath(`assets/images/player/hero_00${i+1}.png`)),
     player_jump: getPath('assets/images/player/hero_001.png'),
-    // Земля (ground) - правильные пути к текстурам из tera
     ground_left: getPath('assets/images/platforms/tera/tera__z11.png'),
     ground_center: getPath('assets/images/platforms/tera/tera__z12.png'),
     ground_right: getPath('assets/images/platforms/tera/tera__z13.png'),
-    // Платформы
     platform: getPath('assets/images/platforms/platform.png'),
     wood: getPath('assets/images/platforms/wood.png'),
     stone: getPath('assets/images/platforms/stone.png'),
     finish: getPath('assets/images/platforms/portal.png'),
-    // Монстры
     slime: getPath('assets/images/monster/slamev2.png'),
     skeleton: getPath('assets/images/monster/skeletos.png'),
     goblin: getPath('assets/images/monster/goblintorgovec.png'),
     stump: getPath('assets/images/monster/t_pen.png'),
     ghost: getPath('assets/images/monster/privedeniev2.png'),
-    // Валюта
     coin: getPath('assets/images/currency/moneta.png'),
     gold: getPath('assets/images/currency/slitok.png'),
     diamond: getPath('assets/images/currency/kristal.png'),
     heart: getPath('assets/images/currency/heart.png'),
     star: getPath('assets/images/currency/star.png'),
     heart_icon: getPath('assets/images/currency/heart.png'),
-    // Фон
     sky: getPath('assets/images/backgrounds/sky.png')
 };
 
 const cloudFiles = Array(5).fill().map((_,i) => getPath(`assets/images/backgrounds/cloud/cloud${i+1}.png`));
 const bushFiles = Array(15).fill().map((_,i) => getPath(`assets/images/backgrounds/bushes/bushes${i+1}.png`));
 
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `❌ ${message}`;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 2000);
+}
+
+// ============ ЗАГРУЗКА СПРАЙТОВ ============
 function loadImage(path, callback) {
     const img = new Image();
-    img.onload = () => { 
-        loadedImages++; 
-        if (callback) callback(img); 
-    };
-    img.onerror = () => { 
-        console.warn(`⚠️ Не загружено: ${path}`);
-        loadedImages++; 
-        if (callback) callback(null); 
-    };
+    img.onload = () => { loadedImages++; if (callback) callback(img); };
+    img.onerror = () => { loadedImages++; if (callback) callback(null); };
     img.src = path;
     return img;
 }
@@ -487,7 +362,12 @@ function loadSprites() {
         if (Array.isArray(spritePaths[key])) totalImages += spritePaths[key].length;
         else if (spritePaths[key]) totalImages++;
     }
-    totalImages += cloudFiles.length + bushFiles.length;
+    totalImages += cloudFiles.length + bushFiles.length + 1;
+    
+    const splashImg = new Image();
+    splashImg.onload = () => { loadedImages++; splashImage = splashImg; };
+    splashImg.onerror = () => { loadedImages++; };
+    splashImg.src = getPath('assets/images/backgrounds/Zastavka.png');
     
     cloudFiles.forEach(path => loadImage(path, (img) => { if(img) sprites.clouds.push(img); }));
     bushFiles.forEach(path => loadImage(path, (img) => { if(img) sprites.bushes.push(img); }));
@@ -495,7 +375,6 @@ function loadSprites() {
     loadImage(spritePaths.player_idle, (img) => { sprites.player_idle = img; });
     spritePaths.player_run.forEach((path, i) => loadImage(path, (img) => { sprites.player_run[i] = img; }));
     loadImage(spritePaths.player_jump, (img) => { sprites.player_jump = img; });
-    // Загружаем текстуры земли
     loadImage(spritePaths.ground_left, (img) => { sprites.ground_left = img; });
     loadImage(spritePaths.ground_center, (img) => { sprites.ground_center = img; });
     loadImage(spritePaths.ground_right, (img) => { sprites.ground_right = img; });
@@ -521,9 +400,8 @@ function loadSprites() {
             clearInterval(checkComplete);
             spritesLoaded = true;
             createBackgroundObjects();
-            parseLevelData(BUILTIN_LEVEL);
-            debugDiv.innerHTML = `✅ Готово!<br>❤️ ${lives}  🪙 ${score}<br>← →  прыжок<br>🔲 Кнопки слева:<br>📁 Текстуры земли загружены:<br>left, center, right`;
-            setupTouchControls();
+            initStars();
+            debugDiv.innerHTML = `✅ Спрайты загружены!<br>🎮 Добро пожаловать, рыцарь!`;
         }
     }, 100);
 }
@@ -533,38 +411,49 @@ function createBackgroundObjects() {
     for (let i = 0; i < 20; i++) {
         if (sprites.clouds.length) {
             const cloudImg = sprites.clouds[Math.floor(Math.random() * sprites.clouds.length)];
-            clouds.push({ img: cloudImg, x: Math.random() * (worldWidth + 2000) - 1000, y: Math.random() * 250 + 50, width: 80 + Math.random() * 60, height: 50 + Math.random() * 40 });
+            clouds.push({ img: cloudImg, x: Math.random() * 3000 - 1000, y: Math.random() * 250 + 50, width: 80 + Math.random() * 60, height: 50 + Math.random() * 40 });
         }
     }
     bushes = [];
     for (let i = 0; i < 50; i++) {
         if (sprites.bushes.length) {
             const bushImg = sprites.bushes[Math.floor(Math.random() * sprites.bushes.length)];
-            bushes.push({ img: bushImg, x: Math.random() * worldWidth, y: 520 + Math.random() * 30, width: 50 + Math.random() * 30, height: 40 + Math.random() * 30 });
+            bushes.push({ img: bushImg, x: Math.random() * 3000, y: 520 + Math.random() * 30, width: 50 + Math.random() * 30, height: 40 + Math.random() * 30 });
         }
     }
 }
 
-function drawSprite(sprite, x, y, width, height, flip = false) {
-    if (!sprite) return;
-    const w = width || 64;
-    const h = height || 64;
-    if (flip) {
-        ctx.save();
-        ctx.translate(x + w, y);
-        ctx.scale(-1, 1);
-        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, 0, w, h);
-        ctx.restore();
-    } else {
-        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, x, y, w, h);
+function initStars() {
+    stars = [];
+    for (let i = 0; i < 100; i++) {
+        stars.push({ x: Math.random() * 800, y: Math.random() * 600, alpha: 0.3 + Math.random() * 0.7 });
     }
 }
 
+function drawSprite(sprite, x, y, w, h, flip = false) {
+    if (!sprite) return;
+    const width = w || 64;
+    const height = h || 64;
+    if (flip) {
+        ctx.save();
+        ctx.translate(x + width, y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, 0, width, height);
+        ctx.restore();
+    } else {
+        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, x, y, width, height);
+    }
+}
+
+// ============ ПАРСИНГ УРОВНЯ ============
 function parseLevelData(data) {
     platforms = []; coins = []; enemies = []; finishRect = null;
     const grid = data.grid;
-    if (!grid) return;
-    const tileSizeOrig = 40;
+    if (!grid || !grid.length) {
+        showError("Ошибка: неверный формат уровня");
+        return false;
+    }
+    const tileSizeOrig = data.tile_size || 40;
     const gridHeight = grid.length;
     const gridWidth = grid[0].length;
     const scale = TILE_SIZE / tileSizeOrig;
@@ -578,221 +467,459 @@ function parseLevelData(data) {
             const worldX = x * tileSizeOrig * scale;
             const worldY = (gridHeight - 1 - y) * tileSizeOrig * scale;
             
-            // Обработка ID блоков
-            if (objId === 32) {
-                // Левый край земли
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_left });
-            }
-            else if (objId === 33) {
-                // Центр земли
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_center });
-            }
-            else if (objId === 34) {
-                // Правый край земли
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_right });
-            }
-            else if (objId === 2) {
-                // Платформа
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.platform });
-            }
-            else if (objId === 3) {
-                // Деревянная платформа
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.wood });
-            }
-            else if (objId === 4) {
-                // Каменная платформа
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.stone });
-            }
-            else if (objId === 31) {
-                finishRect = { x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE };
-            }
+            if (objId === 32) platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_left });
+            else if (objId === 33) platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_center });
+            else if (objId === 34) platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_right });
+            else if (objId === 2) platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.platform });
+            else if (objId === 3) platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.wood });
+            else if (objId === 4) platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.stone });
+            else if (objId === 31) finishRect = { x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE };
             else if (objId >= 20 && objId <= 24) {
                 const types = {20:'coin',21:'gold',22:'diamond',23:'heart',24:'star'};
                 coins.push({ x: worldX + (TILE_SIZE-32)/2, y: worldY + (TILE_SIZE-32)/2, drawWidth:32, drawHeight:32, width:24, height:24, type: types[objId], sprite: sprites[types[objId]] });
             }
             else if (objId >= 10 && objId <= 14) {
                 const types = {10:'slime',11:'skeleton',12:'stump',13:'ghost',14:'goblin'};
-                enemies.push({ x: worldX, y: worldY, drawWidth:48, drawHeight:48, width:40, height:40, type: types[objId], sprite: sprites[types[objId]], dir:1, startX: worldX, speed:2, velY:0, onGround:false });
+                enemies.push({ x: worldX, y: worldY, drawWidth:48, drawHeight:48, width:40, height:40, type: types[objId], sprite: sprites[types[objId]], dir: 1, startX: worldX, speed: 2, velY: 0, onGround: false });
             }
-            else if (objId === 30) { 
-                startX = worldX; 
-                startY = worldY; 
-            }
+            else if (objId === 30) { startX = worldX; startY = worldY; }
         }
     }
     player.x = startX; 
     player.y = startY; 
     player.vx = 0; 
-    player.vy = 0; 
+    player.vy = 0;
+    player.onGround = false;
     player.invincibleTimer = 0;
     lives = 3; 
     score = 0; 
     levelLoaded = true;
     createBackgroundObjects();
-    
-    // Отладка: показываем количество загруженных платформ
-    debugDiv.innerHTML = `✅ Уровень загружен!<br>🧱 Платформ: ${platforms.length}<br>🪙 Монет: ${coins.length}<br>👾 Врагов: ${enemies.length}<br>📁 Текстуры земли: left/center/right`;
+    return true;
 }
 
-// КОЛЛИЗИИ И ЛОГИКА
+// ============ ЗАГРУЗКА УРОВНЯ ИЗ ФАЙЛА ============
+async function loadLevelFromFile(level) {
+    if (isLoadingLevel) return false;
+    isLoadingLevel = true;
+    
+    try {
+        const url = getPath(`levels/${level.file}`);
+        debugDiv.innerHTML = `📁 Загрузка: ${level.name}...`;
+        const response = await fetch(url);
+        if (response.ok) {
+            const levelData = await response.json();
+            if (parseLevelData(levelData)) {
+                debugDiv.innerHTML = `✅ ${level.name}<br>❤️ ${lives}  🪙 ${score}<br>🎮 Управление: ← → | Пробел | ESC - меню`;
+                menuHint.style.display = 'block';
+                isLoadingLevel = false;
+                return true;
+            } else {
+                showError(`Ошибка парсинга уровня: ${level.name}`);
+                isLoadingLevel = false;
+                return false;
+            }
+        } else {
+            showError(`Уровень "${level.name}" не найден в папке levels/`);
+            isLoadingLevel = false;
+            return false;
+        }
+    } catch (e) {
+        console.error('Ошибка загрузки уровня:', e);
+        showError(`Не удалось загрузить уровень: ${level.name}`);
+        isLoadingLevel = false;
+        return false;
+    }
+}
+
+// ============ ЗАСТАВКА ============
+function drawSplash() {
+    if (splashImage) {
+        ctx.drawImage(splashImage, 0, 0, 800, 600);
+    } else {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, 800, 600);
+        ctx.font = "bold 48px 'Courier New', monospace";
+        ctx.fillStyle = "#ffd700";
+        ctx.textAlign = "center";
+        ctx.fillText("РЫЦАРЬ ЧЕСТИ", 400, 280);
+        ctx.font = "24px monospace";
+        ctx.fillStyle = "#fff";
+        ctx.fillText("Knight of Honor", 400, 350);
+    }
+    
+    if (spritesLoaded) {
+        if (Math.floor(Date.now() / 500) % 2 === 0) {
+            ctx.font = "20px monospace";
+            ctx.fillStyle = "#ffaa44";
+            ctx.fillText("Нажмите любую клавишу", 400, 550);
+        }
+    }
+    ctx.textAlign = "left";
+}
+
+// ============ МЕНЮ ============
+function drawMenu() {
+    const grad = ctx.createLinearGradient(0, 0, 800, 600);
+    grad.addColorStop(0, '#0a0a2a');
+    grad.addColorStop(1, '#1a1a3a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 800, 600);
+    
+    for (let s of stars) {
+        ctx.fillStyle = `rgba(255, 255, 200, ${s.alpha})`;
+        ctx.fillRect(s.x, s.y, 2, 2);
+    }
+    
+    ctx.font = "bold 48px 'Courier New', monospace";
+    ctx.fillStyle = "#ffd700";
+    ctx.textAlign = "center";
+    ctx.shadowBlur = 10;
+    ctx.fillText("РЫЦАРЬ ЧЕСТИ", 400, 100);
+    ctx.font = "20px monospace";
+    ctx.fillStyle = "#aaaaff";
+    ctx.fillText("Knight of Honor", 400, 150);
+    ctx.shadowBlur = 0;
+    
+    const menuItems = ["⚔️ НОВАЯ ИГРА", "🗺️ ВЫБОР УРОВНЯ"];
+    const menuY = [270, 340];
+    
+    for (let i = 0; i < menuItems.length; i++) {
+        if (menuSelected === i) {
+            ctx.fillStyle = "#ffd700";
+            ctx.font = "bold 30px 'Courier New', monospace";
+        } else {
+            ctx.fillStyle = "#cccccc";
+            ctx.font = "26px 'Courier New', monospace";
+        }
+        ctx.fillText(menuItems[i], 400, menuY[i]);
+    }
+    
+    if (menuSelected === 1) {
+        ctx.font = "20px monospace";
+        ctx.fillStyle = "#88aaff";
+        ctx.fillText("ВЫБЕРИТЕ УРОВЕНЬ:", 400, 420);
+        
+        for (let i = 0; i < levels.length; i++) {
+            let y = 470 + i * 40;
+            if (levelSelectedIndex === i) {
+                ctx.fillStyle = "#ffd700";
+                ctx.font = "bold 22px monospace";
+                ctx.fillText("▶ " + levels[i].name + " ◀", 400, y);
+            } else {
+                ctx.fillStyle = "#aaccff";
+                ctx.font = "20px monospace";
+                ctx.fillText("  " + levels[i].name, 400, y);
+            }
+        }
+        ctx.font = "14px monospace";
+        ctx.fillStyle = "#88aaff";
+        ctx.fillText("← → выбор | ENTER - ввод пароля", 400, 580);
+    } else {
+        ctx.font = "16px monospace";
+        ctx.fillStyle = "#88aaff";
+        ctx.fillText("← → навигация | ENTER - выбор", 400, 580);
+    }
+    ctx.textAlign = "left";
+}
+
+// ============ ИГРОВАЯ ЛОГИКА ============
 function checkCollisions() {
     player.onGround = false;
     for (let plat of platforms) {
-        if (player.x < plat.x + plat.w && player.x + player.width > plat.x && player.y < plat.y + plat.h && player.y + player.height > plat.y) {
+        if (player.x < plat.x + plat.w && player.x + player.width > plat.x &&
+            player.y < plat.y + plat.h && player.y + player.height > plat.y) {
             const overlapTop = (player.y + player.height) - plat.y;
             const minOverlap = Math.min((player.x+player.width)-plat.x, (plat.x+plat.w)-player.x, overlapTop, (plat.y+plat.h)-player.y);
-            if (minOverlap === overlapTop && player.vy > 0) { 
-                player.y = plat.y - player.height; 
-                player.vy = 0; 
-                player.onGround = true; 
+            if (minOverlap === overlapTop && player.vy > 0) {
+                player.y = plat.y - player.height;
+                player.vy = 0;
+                player.onGround = true;
             }
-            else if (minOverlap === (plat.y+plat.h)-player.y && player.vy < 0) { 
-                player.y = plat.y + plat.h; 
-                player.vy = 0; 
-            }
-            else if (minOverlap === (player.x+player.width)-plat.x) { 
-                player.x = plat.x - player.width; 
-                player.vx = 0; 
-            }
-            else if (minOverlap === (plat.x+plat.w)-player.x) { 
-                player.x = plat.x + plat.w; 
-                player.vx = 0; 
-            }
+            else if (minOverlap === (plat.y+plat.h)-player.y && player.vy < 0) { player.y = plat.y + plat.h; player.vy = 0; }
+            else if (minOverlap === (player.x+player.width)-plat.x) { player.x = plat.x - player.width; player.vx = 0; }
+            else if (minOverlap === (plat.x+plat.w)-player.x) { player.x = plat.x + plat.w; player.vx = 0; }
         }
     }
 }
 
 function updateEnemies() {
     for (let enemy of enemies) {
-        enemy.velY += GRAVITY; 
-        enemy.y += enemy.velY; 
+        enemy.velY += GRAVITY;
+        enemy.y += enemy.velY;
         enemy.onGround = false;
         for (let plat of platforms) {
             if (enemy.x < plat.x+plat.w && enemy.x+enemy.width > plat.x && enemy.y < plat.y+plat.h && enemy.y+enemy.height > plat.y && enemy.velY > 0) {
-                enemy.y = plat.y - enemy.height; 
-                enemy.velY = 0; 
+                enemy.y = plat.y - enemy.height;
+                enemy.velY = 0;
                 enemy.onGround = true;
             }
         }
-        if (enemy.onGround) { 
-            enemy.x += enemy.speed * enemy.dir; 
-            if (enemy.x <= enemy.startX-100) enemy.dir = 1; 
-            if (enemy.x >= enemy.startX+100) enemy.dir = -1; 
+        if (enemy.onGround) {
+            enemy.x += enemy.speed * enemy.dir;
+            if (enemy.x <= enemy.startX - 100) enemy.dir = 1;
+            if (enemy.x >= enemy.startX + 100) enemy.dir = -1;
         }
         if (player.invincibleTimer <= 0 && player.x < enemy.x+enemy.width && player.x+player.width > enemy.x && player.y < enemy.y+enemy.height && player.y+player.height > enemy.y) {
-            lives--; 
+            lives--;
             player.invincibleTimer = INVINCIBLE_TIME;
             player.x = (player.x < enemy.x) ? enemy.x - player.width - 20 : enemy.x + enemy.width + 20;
             player.vy = -10;
-            if (lives <= 0) { 
-                player.x = startX; 
-                player.y = startY; 
-                player.vx = 0; 
-                player.vy = 0; 
-                lives = 3; 
-                score = Math.max(0, score-50); 
+            if (lives <= 0) {
+                player.x = startX; player.y = startY;
+                player.vx = 0; player.vy = 0;
+                lives = 3;
+                score = Math.max(0, score - 50);
             }
-            debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🔲 Кнопки слева`;
+            debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🎮 Управление: ← → | Пробел | ESC - меню`;
         }
     }
     if (player.invincibleTimer > 0) player.invincibleTimer--;
 }
 
 function checkCoins() {
-    for (let i=0; i<coins.length; i++) {
+    for (let i = 0; i < coins.length; i++) {
         const c = coins[i];
-        if (player.x < c.x+c.width && player.x+player.width > c.x && player.y < c.y+c.height && player.y+player.height > c.y) {
-            if (c.type === 'heart') lives = Math.min(lives+1, 5);
-            else { const v = {coin:1,gold:5,diamond:10,star:50}; score += v[c.type] || 1; }
-            coins.splice(i,1); 
+        if (player.x < c.x + c.width && player.x + player.width > c.x && player.y < c.y + c.height && player.y + player.height > c.y) {
+            if (c.type === 'heart') lives = Math.min(lives + 1, 5);
+            else { const v = {coin:1, gold:5, diamond:10, star:50}; score += v[c.type] || 1; }
+            coins.splice(i, 1);
             i--;
-            debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🔲 Кнопки слева`;
+            debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🎮 Управление: ← → | Пробел | ESC - меню`;
         }
     }
 }
 
 function checkFinish() {
     if (finishRect && player.x < finishRect.x+finishRect.w && player.x+player.width > finishRect.x && player.y < finishRect.y+finishRect.h && player.y+player.height > finishRect.y) {
-        debugDiv.innerHTML = `🎉 ПОБЕДА! Счёт: ${score}<br>🏆 Отлично!`;
+        debugDiv.innerHTML = `🎉 ПОБЕДА! Счёт: ${score}<br>🏆 Отлично, рыцарь!`;
+        setTimeout(() => { 
+            currentState = GAME_STATE.MENU; 
+            levelLoaded = false; 
+        }, 2000);
     }
 }
 
 function updatePlayerAnimation() {
-    if (player.onGround && (keys.left || keys.right)) { 
-        player.frameTimer++; 
-        if (player.frameTimer > 4) { 
-            player.frameTimer = 0; 
-            player.frame = (player.frame+1)%10; 
-        } 
-    }
-    else player.frame = 0;
+    if (player.onGround && (keys.left || keys.right)) {
+        player.frameTimer++;
+        if (player.frameTimer > 4) {
+            player.frameTimer = 0;
+            player.frame = (player.frame + 1) % 10;
+        }
+    } else player.frame = 0;
 }
 
-function drawCollisionDebug() {
-    if (!showCollisions) return;
-    ctx.fillStyle = 'rgba(0,255,0,0.5)'; 
-    ctx.fillRect(player.x-cameraX, player.y-cameraY, player.width, player.height);
-    platforms.forEach(p => { 
-        ctx.fillStyle = 'rgba(255,0,0,0.3)'; 
-        ctx.fillRect(p.x-cameraX, p.y-cameraY, p.w, p.h); 
-    });
-}
-
-function update() {
+function updateGame() {
     if (!levelLoaded || !spritesLoaded) return;
+    
     player.vx = 0;
     if (keys.left) { player.vx = -SPEED; player.facingRight = false; }
     if (keys.right) { player.vx = SPEED; player.facingRight = true; }
-    player.x += player.vx; 
+    player.x += player.vx;
     checkCollisions();
-    player.vy += GRAVITY; 
-    player.y += player.vy; 
+    player.vy += GRAVITY;
+    player.y += player.vy;
     checkCollisions();
     if (keys.space && player.onGround) { player.vy = JUMP; player.onGround = false; }
     player.x = Math.max(0, Math.min(player.x, worldWidth - player.width));
     player.y = Math.max(0, Math.min(player.y, worldHeight - player.height));
     cameraX = Math.max(0, Math.min(player.x + player.width/2 - 400, worldWidth - 800));
     cameraY = Math.max(0, Math.min(player.y + player.height/2 - 300, worldHeight - 600));
-    cloudOffset += 0.5; 
+    cloudOffset += 0.5;
     bushOffset += 0.3;
-    updatePlayerAnimation(); 
-    updateEnemies(); 
-    checkCoins(); 
+    updatePlayerAnimation();
+    updateEnemies();
+    checkCoins();
     checkFinish();
 }
 
-function draw() {
+function drawGame() {
     if (sprites.sky) drawSprite(sprites.sky, 0, 0, 800, 600);
-    else { ctx.fillStyle = '#87CEEB'; ctx.fillRect(0,0,800,600); }
-    if (!levelLoaded) { ctx.fillStyle = '#000'; ctx.fillText('Загрузка...', 350,300); return; }
-    clouds.forEach(c => { if(c.img) drawSprite(c.img, (c.x - cameraX*0.3 + cloudOffset*0.5) % (worldWidth+2000) - 500, c.y - cameraY*0.2, c.width, c.height); });
-    platforms.forEach(p => { if(p.sprite) drawSprite(p.sprite, p.x-cameraX, p.y-cameraY, p.w, p.h); });
-    bushes.forEach(b => { if(b.img) drawSprite(b.img, b.x - cameraX*0.6, b.y - cameraY, b.width, b.height); });
-    coins.forEach(c => { if(c.sprite) drawSprite(c.sprite, c.x-cameraX, c.y-cameraY, c.drawWidth, c.drawHeight); });
-    enemies.forEach(e => { if(e.sprite) drawSprite(e.sprite, e.x-cameraX, e.y-cameraY, e.drawWidth, e.drawHeight); });
-    if(finishRect && sprites.finish) drawSprite(sprites.finish, finishRect.x-cameraX, finishRect.y-cameraY, finishRect.w, finishRect.h);
-    let playerSprite = !player.onGround ? sprites.player_jump : (keys.left||keys.right ? sprites.player_run[player.frame] : sprites.player_idle);
-    if(playerSprite) drawSprite(playerSprite, player.x-cameraX, player.y-cameraY, player.drawWidth, player.drawHeight, !player.facingRight);
-    drawCollisionDebug();
-    ctx.fillStyle = '#000'; ctx.font = 'bold 12px monospace';
+    else { ctx.fillStyle = '#2a4a6a'; ctx.fillRect(0, 0, 800, 600); }
+    
+    for (let cloud of clouds) {
+        if (cloud.img) {
+            let x = (cloud.x - cameraX * 0.3 + cloudOffset * 0.5);
+            drawSprite(cloud.img, x, cloud.y - cameraY * 0.2, cloud.width, cloud.height);
+        }
+    }
+    for (let plat of platforms) if (plat.sprite) drawSprite(plat.sprite, plat.x - cameraX, plat.y - cameraY, plat.w, plat.h);
+    for (let bush of bushes) if (bush.img) drawSprite(bush.img, bush.x - cameraX * 0.6, bush.y - cameraY, bush.width, bush.height);
+    for (let coin of coins) if (coin.sprite) drawSprite(coin.sprite, coin.x - cameraX, coin.y - cameraY, coin.drawWidth, coin.drawHeight);
+    for (let enemy of enemies) if (enemy.sprite) drawSprite(enemy.sprite, enemy.x - cameraX, enemy.y - cameraY, enemy.drawWidth, enemy.drawHeight);
+    if (finishRect && sprites.finish) drawSprite(sprites.finish, finishRect.x - cameraX, finishRect.y - cameraY, finishRect.w, finishRect.h);
+    
+    let playerSprite = !player.onGround ? sprites.player_jump : (keys.left || keys.right ? sprites.player_run[player.frame] : sprites.player_idle);
+    if (playerSprite) drawSprite(playerSprite, player.x - cameraX, player.y - cameraY, player.drawWidth, player.drawHeight, !player.facingRight);
+    
+    if (showCollisions) {
+        ctx.fillStyle = 'rgba(0,255,0,0.3)';
+        ctx.fillRect(player.x - cameraX, player.y - cameraY, player.width, player.height);
+        for (let plat of platforms) {
+            ctx.fillStyle = 'rgba(255,0,0,0.3)';
+            ctx.fillRect(plat.x - cameraX, plat.y - cameraY, plat.w, plat.h);
+        }
+    }
+    
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 12px monospace';
     ctx.fillText(`❤️ ${lives}  🪙 ${score}`, 10, 25);
+    if (showCollisions) {
+        ctx.fillStyle = '#ff0';
+        ctx.fillText("🔍 Режим отладки ВКЛ", 10, 45);
+    }
+}
+
+// ============ УПРАВЛЕНИЕ ============
+function setupTouchControls() {
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnJump = document.getElementById('btnJump');
+    if (!btnLeft) return;
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+    btnLeft.addEventListener('touchend', () => { keys.left = false; });
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+    btnRight.addEventListener('touchend', () => { keys.right = false; });
+    btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); keys.space = true; });
+    btnJump.addEventListener('touchend', () => { keys.space = false; });
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.code === 'ArrowLeft') keys.left = true;
-    if (e.code === 'ArrowRight') keys.right = true;
-    if (e.code === 'Space') { keys.space = true; e.preventDefault(); }
-    if (e.code === 'KeyH') { showCollisions = !showCollisions; debugDiv.innerHTML = showCollisions ? '🔍 Подсветка ВКЛ' : '🔍 Подсветка ВЫКЛ'; }
-    if (e.code === 'F11') { e.preventDefault(); toggleFullscreen(); }
-});
-document.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') keys.space = false;
-    if (e.code === 'ArrowLeft') keys.left = false;
-    if (e.code === 'ArrowRight') keys.right = false;
+    if (currentState === GAME_STATE.SPLASH && spritesLoaded) {
+        currentState = GAME_STATE.MENU;
+        return;
+    }
+    if (currentState === GAME_STATE.MENU) {
+        if (e.code === 'ArrowUp') menuSelected = 0;
+        if (e.code === 'ArrowDown') menuSelected = 1;
+        if (e.code === 'ArrowLeft' && menuSelected === 1) levelSelectedIndex = Math.max(0, levelSelectedIndex - 1);
+        if (e.code === 'ArrowRight' && menuSelected === 1) levelSelectedIndex = Math.min(levels.length - 1, levelSelectedIndex + 1);
+        if (e.code === 'Enter') {
+            if (menuSelected === 0) {
+                selectedLevel = levels[0];
+                currentState = GAME_STATE.PASSWORD;
+            } else if (menuSelected === 1) {
+                selectedLevel = levels[levelSelectedIndex];
+                currentState = GAME_STATE.PASSWORD;
+            }
+        }
+    } else if (currentState === GAME_STATE.PLAYING) {
+        if (e.code === 'ArrowLeft') keys.left = true;
+        if (e.code === 'ArrowRight') keys.right = true;
+        if (e.code === 'Space') { keys.space = true; e.preventDefault(); }
+        if (e.code === 'Escape') { 
+            currentState = GAME_STATE.MENU; 
+            levelLoaded = false;
+            debugDiv.innerHTML = `🎮 МЕНЮ<br>Выберите уровень`;
+        }
+        if (e.code === 'KeyH') { 
+            showCollisions = !showCollisions; 
+            debugDiv.innerHTML = showCollisions ? '🔍 Режим отладки ВКЛ' : '🔍 Режим отладки ВЫКЛ';
+            setTimeout(() => {
+                if (currentState === GAME_STATE.PLAYING && levelLoaded) {
+                    debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🎮 Управление: ← → | Пробел | ESC - меню`;
+                }
+            }, 1500);
+        }
+    }
 });
 
+document.addEventListener('keyup', (e) => {
+    if (currentState === GAME_STATE.PLAYING) {
+        if (e.code === 'Space') keys.space = false;
+        if (e.code === 'ArrowLeft') keys.left = false;
+        if (e.code === 'ArrowRight') keys.right = false;
+    }
+});
+
+// Полноэкранный режим
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const windowBtn = document.getElementById('windowBtn');
+fullscreenBtn.addEventListener('click', () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+});
+windowBtn.addEventListener('click', () => { window.open(window.location.href, '_blank'); });
+
+// Парольное окно
+function showPasswordModal() {
+    if (!selectedLevel || isPasswordModalOpen) return;
+    isPasswordModalOpen = true;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="password-modal">
+            <h3>🔐 ВВЕДИТЕ ПАРОЛЬ</h3>
+            <p style="color:#aaa">Уровень: ${selectedLevel.name}</p>
+            <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="off">
+            <br>
+            <button id="confirmBtn">ВОЙТИ</button>
+            <button id="cancelBtn">ОТМЕНА</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const input = modal.querySelector('#passwordInput');
+    const confirmBtn = modal.querySelector('#confirmBtn');
+    const cancelBtn = modal.querySelector('#cancelBtn');
+    
+    const closeModal = () => {
+        modal.remove();
+        isPasswordModalOpen = false;
+    };
+    
+    confirmBtn.onclick = async () => {
+        if (input.value === selectedLevel.password) {
+            closeModal();
+            const success = await loadLevelFromFile(selectedLevel);
+            if (success) {
+                currentState = GAME_STATE.PLAYING;
+                menuHint.style.display = 'block';
+            } else {
+                currentState = GAME_STATE.MENU;
+            }
+        } else {
+            showError('❌ Неверный пароль!');
+            closeModal();
+            currentState = GAME_STATE.MENU;
+        }
+    };
+    cancelBtn.onclick = () => {
+        closeModal();
+        currentState = GAME_STATE.MENU;
+    };
+    input.onkeypress = (e) => { if (e.key === 'Enter') confirmBtn.onclick(); };
+    input.focus();
+}
+
+// Главный цикл
 loadSprites();
-function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+setupTouchControls();
+menuHint.style.display = 'none';
+
+function gameLoop() {
+    if (currentState === GAME_STATE.SPLASH) { 
+        drawSplash(); 
+    }
+    else if (currentState === GAME_STATE.MENU) { 
+        drawMenu(); 
+        menuHint.style.display = 'none';
+    }
+    else if (currentState === GAME_STATE.PASSWORD) { 
+        showPasswordModal(); 
+        // Сбрасываем состояние, чтобы не вызывать снова
+        if (currentState === GAME_STATE.PASSWORD) {
+            currentState = GAME_STATE.MENU;
+        }
+    }
+    else if (currentState === GAME_STATE.PLAYING) { 
+        updateGame(); 
+        drawGame(); 
+    }
+    requestAnimationFrame(gameLoop);
+}
 gameLoop();
 </script>
 </body>
