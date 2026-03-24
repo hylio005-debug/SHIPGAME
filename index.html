@@ -256,7 +256,7 @@ function toggleFullscreen() {
                              elem.msRequestFullscreen;
         if (requestMethod) {
             requestMethod.call(elem);
-            showToast('🎮 Полноэкранный режим активирован! Для выхода нажмите ESC');
+            showToast('🎮 Полноэкранный режим активирован!');
         } else {
             showToast('⚠️ Полноэкранный режим не поддерживается');
         }
@@ -280,7 +280,7 @@ function openInWindow() {
         showToast('✨ Игра открыта в новом окне!');
         URL.revokeObjectURL(url);
     } else {
-        showToast('⚠️ Разрешите всплывающие окна для этого сайта');
+        showToast('⚠️ Разрешите всплывающие окна');
         window.open(window.location.href, '_blank');
     }
 }
@@ -308,7 +308,7 @@ document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 document.addEventListener('mozfullscreenchange', updateFullscreenButton);
 
-// ============ НАСТРОЙКА ПУТЕЙ - ВСЕ ПУТИ ИСПРАВЛЕНЫ ============
+// ============ НАСТРОЙКА ПУТЕЙ ============
 const BASE_PATH = 'https://hylio005-debug.github.io/SHIPGAME/';
 
 function getPath(relativePath) {
@@ -422,30 +422,26 @@ function setupTouchControls() {
     btnJump.addEventListener('mouseleave', () => { keys.space = false; });
 }
 
-// ============ ЗАГРУЗКА СПРАЙТОВ - ПУТИ ИСПРАВЛЕНЫ ============
+// ============ ЗАГРУЗКА СПРАЙТОВ ============
 const sprites = {
     player_idle: null, player_run: [], player_jump: null,
-    ground: null, ground_left: null, ground_center: null, ground_right: null,
+    ground_left: null, ground_center: null, ground_right: null,
     platform: null, wood: null, stone: null, finish: null,
     slime: null, skeleton: null, goblin: null, stump: null, ghost: null,
     coin: null, gold: null, diamond: null, heart: null, star: null,
     heart_icon: null, sky: null, clouds: [], bushes: []
 };
 
-// ПРАВИЛЬНЫЕ ПУТИ:
-// - platforms/tera/ - для земли (ground)
-// - platforms/ - для платформ
-// - grounds/ - если есть отдельная папка
+// ПРАВИЛЬНЫЕ ПУТИ - земля из папки platforms/tera/
 const spritePaths = {
     player_idle: getPath('assets/images/player/hero_001.png'),
     player_run: Array(10).fill().map((_,i) => getPath(`assets/images/player/hero_00${i+1}.png`)),
     player_jump: getPath('assets/images/player/hero_001.png'),
-    // Земля (ground) хранится в папке platforms/tera/
-    ground: getPath('assets/images/platforms/tera/tera__z11.png'),
+    // Земля (ground) - правильные пути к текстурам из tera
     ground_left: getPath('assets/images/platforms/tera/tera__z11.png'),
     ground_center: getPath('assets/images/platforms/tera/tera__z12.png'),
     ground_right: getPath('assets/images/platforms/tera/tera__z13.png'),
-    // Платформы и объекты
+    // Платформы
     platform: getPath('assets/images/platforms/platform.png'),
     wood: getPath('assets/images/platforms/wood.png'),
     stone: getPath('assets/images/platforms/stone.png'),
@@ -499,7 +495,7 @@ function loadSprites() {
     loadImage(spritePaths.player_idle, (img) => { sprites.player_idle = img; });
     spritePaths.player_run.forEach((path, i) => loadImage(path, (img) => { sprites.player_run[i] = img; }));
     loadImage(spritePaths.player_jump, (img) => { sprites.player_jump = img; });
-    loadImage(spritePaths.ground, (img) => { sprites.ground = img; });
+    // Загружаем текстуры земли
     loadImage(spritePaths.ground_left, (img) => { sprites.ground_left = img; });
     loadImage(spritePaths.ground_center, (img) => { sprites.ground_center = img; });
     loadImage(spritePaths.ground_right, (img) => { sprites.ground_right = img; });
@@ -526,7 +522,7 @@ function loadSprites() {
             spritesLoaded = true;
             createBackgroundObjects();
             parseLevelData(BUILTIN_LEVEL);
-            debugDiv.innerHTML = `✅ Готово!<br>❤️ ${lives}  🪙 ${score}<br>← →  прыжок<br>🔲 Кнопки слева:<br>⛶ - полноэкранный<br>🪟 - в новое окно<br>📁 Пути: platforms/tera/`;
+            debugDiv.innerHTML = `✅ Готово!<br>❤️ ${lives}  🪙 ${score}<br>← →  прыжок<br>🔲 Кнопки слева:<br>📁 Текстуры земли загружены:<br>left, center, right`;
             setupTouchControls();
         }
     }, 100);
@@ -582,17 +578,34 @@ function parseLevelData(data) {
             const worldX = x * tileSizeOrig * scale;
             const worldY = (gridHeight - 1 - y) * tileSizeOrig * scale;
             
-            if ((objId >= 1 && objId <= 4) || (objId >= 32 && objId <= 34)) {
-                let spriteType = 'ground';
-                if (objId === 2) spriteType = 'platform';
-                else if (objId === 3) spriteType = 'wood';
-                else if (objId === 4) spriteType = 'stone';
-                else if (objId === 32) spriteType = 'ground_left';
-                else if (objId === 33) spriteType = 'ground_center';
-                else if (objId === 34) spriteType = 'ground_right';
-                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites[spriteType] });
+            // Обработка ID блоков
+            if (objId === 32) {
+                // Левый край земли
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_left });
             }
-            else if (objId === 31) finishRect = { x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE };
+            else if (objId === 33) {
+                // Центр земли
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_center });
+            }
+            else if (objId === 34) {
+                // Правый край земли
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.ground_right });
+            }
+            else if (objId === 2) {
+                // Платформа
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.platform });
+            }
+            else if (objId === 3) {
+                // Деревянная платформа
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.wood });
+            }
+            else if (objId === 4) {
+                // Каменная платформа
+                platforms.push({ x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE, sprite: sprites.stone });
+            }
+            else if (objId === 31) {
+                finishRect = { x: worldX, y: worldY, w: TILE_SIZE, h: TILE_SIZE };
+            }
             else if (objId >= 20 && objId <= 24) {
                 const types = {20:'coin',21:'gold',22:'diamond',23:'heart',24:'star'};
                 coins.push({ x: worldX + (TILE_SIZE-32)/2, y: worldY + (TILE_SIZE-32)/2, drawWidth:32, drawHeight:32, width:24, height:24, type: types[objId], sprite: sprites[types[objId]] });
@@ -601,12 +614,24 @@ function parseLevelData(data) {
                 const types = {10:'slime',11:'skeleton',12:'stump',13:'ghost',14:'goblin'};
                 enemies.push({ x: worldX, y: worldY, drawWidth:48, drawHeight:48, width:40, height:40, type: types[objId], sprite: sprites[types[objId]], dir:1, startX: worldX, speed:2, velY:0, onGround:false });
             }
-            else if (objId === 30) { startX = worldX; startY = worldY; }
+            else if (objId === 30) { 
+                startX = worldX; 
+                startY = worldY; 
+            }
         }
     }
-    player.x = startX; player.y = startY; player.vx = 0; player.vy = 0; player.invincibleTimer = 0;
-    lives = 3; score = 0; levelLoaded = true;
+    player.x = startX; 
+    player.y = startY; 
+    player.vx = 0; 
+    player.vy = 0; 
+    player.invincibleTimer = 0;
+    lives = 3; 
+    score = 0; 
+    levelLoaded = true;
     createBackgroundObjects();
+    
+    // Отладка: показываем количество загруженных платформ
+    debugDiv.innerHTML = `✅ Уровень загружен!<br>🧱 Платформ: ${platforms.length}<br>🪙 Монет: ${coins.length}<br>👾 Врагов: ${enemies.length}<br>📁 Текстуры земли: left/center/right`;
 }
 
 // КОЛЛИЗИИ И ЛОГИКА
@@ -616,28 +641,57 @@ function checkCollisions() {
         if (player.x < plat.x + plat.w && player.x + player.width > plat.x && player.y < plat.y + plat.h && player.y + player.height > plat.y) {
             const overlapTop = (player.y + player.height) - plat.y;
             const minOverlap = Math.min((player.x+player.width)-plat.x, (plat.x+plat.w)-player.x, overlapTop, (plat.y+plat.h)-player.y);
-            if (minOverlap === overlapTop && player.vy > 0) { player.y = plat.y - player.height; player.vy = 0; player.onGround = true; }
-            else if (minOverlap === (plat.y+plat.h)-player.y && player.vy < 0) { player.y = plat.y + plat.h; player.vy = 0; }
-            else if (minOverlap === (player.x+player.width)-plat.x) { player.x = plat.x - player.width; player.vx = 0; }
-            else if (minOverlap === (plat.x+plat.w)-player.x) { player.x = plat.x + plat.w; player.vx = 0; }
+            if (minOverlap === overlapTop && player.vy > 0) { 
+                player.y = plat.y - player.height; 
+                player.vy = 0; 
+                player.onGround = true; 
+            }
+            else if (minOverlap === (plat.y+plat.h)-player.y && player.vy < 0) { 
+                player.y = plat.y + plat.h; 
+                player.vy = 0; 
+            }
+            else if (minOverlap === (player.x+player.width)-plat.x) { 
+                player.x = plat.x - player.width; 
+                player.vx = 0; 
+            }
+            else if (minOverlap === (plat.x+plat.w)-player.x) { 
+                player.x = plat.x + plat.w; 
+                player.vx = 0; 
+            }
         }
     }
 }
 
 function updateEnemies() {
     for (let enemy of enemies) {
-        enemy.velY += GRAVITY; enemy.y += enemy.velY; enemy.onGround = false;
+        enemy.velY += GRAVITY; 
+        enemy.y += enemy.velY; 
+        enemy.onGround = false;
         for (let plat of platforms) {
             if (enemy.x < plat.x+plat.w && enemy.x+enemy.width > plat.x && enemy.y < plat.y+plat.h && enemy.y+enemy.height > plat.y && enemy.velY > 0) {
-                enemy.y = plat.y - enemy.height; enemy.velY = 0; enemy.onGround = true;
+                enemy.y = plat.y - enemy.height; 
+                enemy.velY = 0; 
+                enemy.onGround = true;
             }
         }
-        if (enemy.onGround) { enemy.x += enemy.speed * enemy.dir; if (enemy.x <= enemy.startX-100) enemy.dir = 1; if (enemy.x >= enemy.startX+100) enemy.dir = -1; }
+        if (enemy.onGround) { 
+            enemy.x += enemy.speed * enemy.dir; 
+            if (enemy.x <= enemy.startX-100) enemy.dir = 1; 
+            if (enemy.x >= enemy.startX+100) enemy.dir = -1; 
+        }
         if (player.invincibleTimer <= 0 && player.x < enemy.x+enemy.width && player.x+player.width > enemy.x && player.y < enemy.y+enemy.height && player.y+player.height > enemy.y) {
-            lives--; player.invincibleTimer = INVINCIBLE_TIME;
+            lives--; 
+            player.invincibleTimer = INVINCIBLE_TIME;
             player.x = (player.x < enemy.x) ? enemy.x - player.width - 20 : enemy.x + enemy.width + 20;
             player.vy = -10;
-            if (lives <= 0) { player.x = startX; player.y = startY; player.vx = 0; player.vy = 0; lives = 3; score = Math.max(0, score-50); }
+            if (lives <= 0) { 
+                player.x = startX; 
+                player.y = startY; 
+                player.vx = 0; 
+                player.vy = 0; 
+                lives = 3; 
+                score = Math.max(0, score-50); 
+            }
             debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🔲 Кнопки слева`;
         }
     }
@@ -650,7 +704,8 @@ function checkCoins() {
         if (player.x < c.x+c.width && player.x+player.width > c.x && player.y < c.y+c.height && player.y+player.height > c.y) {
             if (c.type === 'heart') lives = Math.min(lives+1, 5);
             else { const v = {coin:1,gold:5,diamond:10,star:50}; score += v[c.type] || 1; }
-            coins.splice(i,1); i--;
+            coins.splice(i,1); 
+            i--;
             debugDiv.innerHTML = `❤️ ${lives}  🪙 ${score}<br>🔲 Кнопки слева`;
         }
     }
@@ -663,14 +718,24 @@ function checkFinish() {
 }
 
 function updatePlayerAnimation() {
-    if (player.onGround && (keys.left || keys.right)) { player.frameTimer++; if (player.frameTimer > 4) { player.frameTimer = 0; player.frame = (player.frame+1)%10; } }
+    if (player.onGround && (keys.left || keys.right)) { 
+        player.frameTimer++; 
+        if (player.frameTimer > 4) { 
+            player.frameTimer = 0; 
+            player.frame = (player.frame+1)%10; 
+        } 
+    }
     else player.frame = 0;
 }
 
 function drawCollisionDebug() {
     if (!showCollisions) return;
-    ctx.fillStyle = 'rgba(0,255,0,0.5)'; ctx.fillRect(player.x-cameraX, player.y-cameraY, player.width, player.height);
-    platforms.forEach(p => { ctx.fillStyle = 'rgba(255,0,0,0.3)'; ctx.fillRect(p.x-cameraX, p.y-cameraY, p.w, p.h); });
+    ctx.fillStyle = 'rgba(0,255,0,0.5)'; 
+    ctx.fillRect(player.x-cameraX, player.y-cameraY, player.width, player.height);
+    platforms.forEach(p => { 
+        ctx.fillStyle = 'rgba(255,0,0,0.3)'; 
+        ctx.fillRect(p.x-cameraX, p.y-cameraY, p.w, p.h); 
+    });
 }
 
 function update() {
@@ -678,15 +743,22 @@ function update() {
     player.vx = 0;
     if (keys.left) { player.vx = -SPEED; player.facingRight = false; }
     if (keys.right) { player.vx = SPEED; player.facingRight = true; }
-    player.x += player.vx; checkCollisions();
-    player.vy += GRAVITY; player.y += player.vy; checkCollisions();
+    player.x += player.vx; 
+    checkCollisions();
+    player.vy += GRAVITY; 
+    player.y += player.vy; 
+    checkCollisions();
     if (keys.space && player.onGround) { player.vy = JUMP; player.onGround = false; }
     player.x = Math.max(0, Math.min(player.x, worldWidth - player.width));
     player.y = Math.max(0, Math.min(player.y, worldHeight - player.height));
     cameraX = Math.max(0, Math.min(player.x + player.width/2 - 400, worldWidth - 800));
     cameraY = Math.max(0, Math.min(player.y + player.height/2 - 300, worldHeight - 600));
-    cloudOffset += 0.5; bushOffset += 0.3;
-    updatePlayerAnimation(); updateEnemies(); checkCoins(); checkFinish();
+    cloudOffset += 0.5; 
+    bushOffset += 0.3;
+    updatePlayerAnimation(); 
+    updateEnemies(); 
+    checkCoins(); 
+    checkFinish();
 }
 
 function draw() {
